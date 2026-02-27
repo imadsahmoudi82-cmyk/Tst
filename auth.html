@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>تسجيل الدخول | ONE 1</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        :root { --p: #6c5ce7; --bg: #ffffff; --text: #2d3436; --gray: #f1f2f6; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; color: var(--text); }
+        .auth-container { width: 90%; max-width: 400px; padding: 30px; text-align: center; }
+        .logo { font-size: 40px; font-weight: 900; color: var(--p); margin-bottom: 10px; }
+        h2 { margin-bottom: 30px; font-size: 22px; color: #444; }
+        .input-group { margin-bottom: 15px; text-align: right; }
+        label { display: block; margin-bottom: 5px; font-size: 14px; color: #666; margin-right: 5px; }
+        input { width: 100%; padding: 14px; background: var(--gray); border: 2px solid transparent; border-radius: 12px; outline: none; transition: 0.3s; box-sizing: border-box; font-size: 16px; }
+        input:focus { border-color: var(--p); background: white; }
+        .btn { width: 100%; padding: 15px; background: var(--p); color: white; border: none; border-radius: 12px; font-size: 17px; font-weight: bold; cursor: pointer; margin-top: 10px; transition: 0.3s; }
+        .btn:active { transform: scale(0.98); }
+        .toggle-link { margin-top: 20px; font-size: 14px; color: #777; cursor: pointer; display: block; }
+        .toggle-link span { color: var(--p); font-weight: bold; }
+        #errorMessage { color: #ff4757; font-size: 13px; margin-top: 15px; display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="auth-container">
+        <div class="logo">ONE 1</div>
+        <h2 id="authTitle">إنشاء حساب جديد</h2>
+
+        <div id="registerFields">
+            <div class="input-group">
+                <label>الاسم الكامل</label>
+                <input type="text" id="regName" placeholder="أدخل اسمك">
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label>البريد الإلكتروني</label>
+            <input type="email" id="authEmail" placeholder="example@mail.com">
+        </div>
+
+        <div class="input-group">
+            <label>كلمة المرور</label>
+            <input type="password" id="authPassword" placeholder="••••••••">
+        </div>
+
+        <button class="btn" id="authBtn">إنشاء الحساب</button>
+        <div id="errorMessage"></div>
+
+        <span class="toggle-link" id="toggleAuth">لديك حساب بالفعل؟ <span>تسجيل الدخول</span></span>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = { 
+            apiKey: "AIzaSyDj1jWQZHnELXe_eFkfGpi3F3_jPGhPm7I", 
+            authDomain: "one1-95c0e.firebaseapp.com", 
+            projectId: "one1-95c0e", 
+            appId: "1:1090900617422:web:f6e9c11bb7a090c39ec89f" 
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let isLogin = false;
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) window.location.replace("index.html");
+        });
+
+        const toggleBtn = document.getElementById('toggleAuth');
+        const authTitle = document.getElementById('authTitle');
+        const authBtn = document.getElementById('authBtn');
+        const regFields = document.getElementById('registerFields');
+        const errorMsg = document.getElementById('errorMessage');
+
+        toggleBtn.onclick = () => {
+            isLogin = !isLogin;
+            authTitle.innerText = isLogin ? "تسجيل الدخول" : "إنشاء حساب جديد";
+            authBtn.innerText = isLogin ? "دخول" : "إنشاء الحساب";
+            regFields.style.display = isLogin ? "none" : "block";
+            toggleBtn.innerHTML = isLogin ? "ليس لديك حساب؟ <span>إنشاء حساب</span>" : "لديك حساب بالفعل؟ <span>تسجيل الدخول</span>";
+        };
+
+        authBtn.onclick = async () => {
+            const email = document.getElementById('authEmail').value;
+            const password = document.getElementById('authPassword').value;
+            const name = document.getElementById('regName').value;
+
+            errorMsg.style.display = "none";
+
+            try {
+                if (isLogin) {
+                    await signInWithEmailAndPassword(auth, email, password);
+                } else {
+                    if (!name) throw new Error("يرجى إدخال الاسم");
+                    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                    const user = userCredential.user;
+
+                    await setDoc(doc(db, "users", user.uid), {
+                        uid: user.uid,
+                        name: name,
+                        email: email,
+                        isVerified: false,
+                        verifyDuration: "permanent",
+                        photo: "",
+                        followers: 0,
+                        posts: 0,
+                        rating: 5.0
+                    });
+                }
+            } catch (error) {
+                errorMsg.innerText = error.message;
+                errorMsg.style.display = "block";
+            }
+        };
+    </script>
+</body>
+</html>
